@@ -1,0 +1,1 @@
+# Training 01: Basic Terraform project
