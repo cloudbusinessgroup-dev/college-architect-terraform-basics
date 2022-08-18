@@ -7,8 +7,8 @@ terraform {
   }
   
   backend "azurerm" {
-    resource_group_name   = "Terraform-YourName"
-    storage_account_name  = "collegeyourshortcode"
+    resource_group_name   = "Terraform"
+    storage_account_name  = "collegeinfrastructure"
     container_name        = "tf-state"
     key                   = "terraform.tfstate"
   }
@@ -67,10 +67,10 @@ resource "azurerm_subnet" "vnet_hub_subnet_shared_bastionhost" {
  name = "AzureBastionSubnet"
  resource_group_name = azurerm_resource_group.coll_part.name
  virtual_network_name = azurerm_virtual_network.vnet_hub.name
- address_prefix = ["10.1.0.32/27"] 
+ address_prefixes = ["10.1.0.32/27"] 
 }
 
 resource "azurerm_subnet_network_security_group_association" "nsg_to_default_subnet" {
   subnet_id = azurerm_subnet.vnet_hub_subnet_default.id
-  networknetwork_security_group_id = azurerm_network_security_group.nsg_vnet_hub.id  
+  network_security_group_id = azurerm_network_security_group.nsg_vnet_hub.id  
 }
