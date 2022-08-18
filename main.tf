@@ -112,7 +112,7 @@ resource "azurerm_network_interface" "nic_bastion_host" {
 
 resource "azurerm_windows_virtual_machine" "jumphost" {
   name = (format("%s-%s-%s-VM-JH-001", var.coll_prefix, var.env_name, var.location_short))
-  computer_name = (format("%s-%s-%s-JH", var.coll_prefix, var.env_name, var.location_short))
+  computer_name = "VMBASTJH"
   resource_group_name = azurerm_resource_group.coll_part.name
   location = var.location
   tags = var.tags
