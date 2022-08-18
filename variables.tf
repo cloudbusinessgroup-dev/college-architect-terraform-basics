@@ -1,13 +1,13 @@
 variable "tenant_id" {
   type        = string
   description = "ID of the azure tenant"
-  default = ""
+  default = "28966094-c809-495e-9ae5-2019d0372648"
 }
 
 variable "subscription_id" {
   type        = string
   description = "ID of the azure subscription"
-  default = ""
+  default = "f0468dde-8080-46e2-b47b-6a1cb0abe566"
 }
 
 variable "location" {
@@ -19,13 +19,13 @@ variable "location" {
 variable "client_id" {
   type        = string
   description = "The College App Registration ID we have created before"
-  default = ""
+  default = "e7e20ab3-47ba-4cb2-94fa-f9143304627a"
 }
 
 variable "client_secret" {
   type        = string
   description = "The College App Registration client secret we have created before"
-  default = ""
+  default = ".Ji8Q~_rm9aj8-CeXBJkEvkRqlVxsKmBKCzpBaoB"
 }
 
 variable "tags" {
@@ -58,3 +58,4 @@ variable "coll_prefix" {
   description = "Name of the environment" 
   default     = "COLLEGE-INFRA"
 }
+
