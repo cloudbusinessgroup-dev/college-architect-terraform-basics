@@ -74,7 +74,3 @@ resource "azurerm_subnet_network_security_group_association" "nsg_to_default_sub
   subnet_id = azurerm_subnet.vnet_hub_subnet_default.id
   networknetwork_security_group_id = azurerm_network_security_group.nsg_vnet_hub.id  
 }
-
-resource "azurerm_public_ip" "bastion_pip" {
-  
-}
