@@ -278,3 +278,36 @@ resource "azurerm_linux_virtual_machine" "virtualappliance-vm-01" {
     public_key = tls_private_key.virtualappliance-private_key-01.public_key_openssh
   }
 }
+
+resource "azurerm_route_table" "route_table_virtual_appliance" {
+  name                          = (format("%s-%s-%s-RT-INFRA-VIRTAPPL-001", var.coll_prefix, var.env_name, var.location_short))
+  location                      = var.location
+  resource_group_name           = azurerm_resource_group.rg_infra.name
+  disable_bgp_route_propagation = false
+
+  route {
+    name           = "default_route_0-0-0-0_0"
+    address_prefix = "0.0.0.0/0"
+    next_hop_type  = "VirtualAppliance"
+    next_hop_in_ip_address = "10.1.0.5"
+  }
+
+  route {
+    name           = (format("%s-%s-ROUTE-HUB-NETWORK-001", var.coll_prefix, var.env_name))
+    address_prefix = "10.1.0.0/24"
+    next_hop_type  = "VirtualAppliance"
+    next_hop_in_ip_address = "10.1.0.5"
+  }
+
+  route {
+    name           = (format("%s-%s-ROUTE-CORP-NETWORK-001", var.coll_prefix, var.env_name))
+    address_prefix = "10.32.0.0/12"
+    next_hop_type  = "VirtualAppliance"
+    next_hop_in_ip_address = "10.1.0.5"
+  }
+}
+
+resource "azurerm_subnet_route_table_association" "default_subnet_spoke_route_table" {
+  subnet_id      = azurerm_subnet.default_subnet_spoke_infra.id
+  route_table_id = azurerm_route_table.route_table_virtual_appliance.id
+}
