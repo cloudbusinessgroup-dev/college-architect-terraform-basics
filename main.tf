@@ -206,9 +206,9 @@ resource "azurerm_windows_virtual_machine" "infra_dc_server" {
   resource_group_name = azurerm_resource_group.rg_infra.name
   location = var.location
   tags = var.tags
-  size = "Standard_B1s"
+  size = "Standard_DS1_v2"
   admin_username = "admindc"
-  admin_password = "Passw0rd001"
+  admin_password = "Passw!0rd001800500"
   network_interface_ids = [
     azurerm_network_interface.nic_infra_dc_server.id
   ]
@@ -225,6 +225,8 @@ resource "azurerm_windows_virtual_machine" "infra_dc_server" {
     version = "latest"
   }
 }
+
+
 
 resource "azurerm_network_interface" "nic_virtual_appliance_001" {
   name = (format("%s-%s-%s-NIC-VA-001", var.coll_prefix, var.env_name, var.location_short))
@@ -288,15 +290,8 @@ resource "azurerm_route_table" "route_table_virtual_appliance" {
   disable_bgp_route_propagation = false
 
   route {
-    name           = "default_route_0-0-0-0_0"
-    address_prefix = "0.0.0.0/0"
-    next_hop_type  = "VirtualAppliance"
-    next_hop_in_ip_address = "10.1.0.5"
-  }
-
-  route {
     name           = (format("%s-%s-ROUTE-HUB-NETWORK-001", var.coll_prefix, var.env_name))
-    address_prefix = "10.1.0.0/24"
+    address_prefix = "10.1.0.4/32"
     next_hop_type  = "VirtualAppliance"
     next_hop_in_ip_address = "10.1.0.5"
   }
@@ -308,6 +303,7 @@ resource "azurerm_route_table" "route_table_virtual_appliance" {
     next_hop_in_ip_address = "10.1.0.5"
   }
 }
+
 
 resource "azurerm_subnet_route_table_association" "default_subnet_spoke_route_table" {
   subnet_id      = azurerm_subnet.default_subnet_spoke_infra.id
