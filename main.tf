@@ -252,6 +252,7 @@ resource "local_file" "linux_va_pem" {
 resource "azurerm_linux_virtual_machine" "virtualappliance-vm-01" {
   name                  = (format("%s-%s-%s-VM-INFRA-VIRTAPPL-001", var.coll_prefix, var.env_name, var.location_short))
   location              = var.location
+  tags                  = var.tags
   resource_group_name   = azurerm_resource_group.coll_part.name
   network_interface_ids = [azurerm_network_interface.nic_virtual_appliance_001.id]
   size                  = "Standard_B1s"
@@ -282,6 +283,7 @@ resource "azurerm_linux_virtual_machine" "virtualappliance-vm-01" {
 resource "azurerm_route_table" "route_table_virtual_appliance" {
   name                          = (format("%s-%s-%s-RT-INFRA-VIRTAPPL-001", var.coll_prefix, var.env_name, var.location_short))
   location                      = var.location
+  tags                          = var.tags
   resource_group_name           = azurerm_resource_group.rg_infra.name
   disable_bgp_route_propagation = false
 
