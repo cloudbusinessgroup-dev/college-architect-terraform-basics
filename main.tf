@@ -225,3 +225,56 @@ resource "azurerm_windows_virtual_machine" "infra_dc_server" {
     version = "latest"
   }
 }
+
+resource "azurerm_network_interface" "nic_virtual_appliance_001" {
+  name = (format("%s-%s-%s-NIC-VA-001", var.coll_prefix, var.env_name, var.location_short))
+  resource_group_name = azurerm_resource_group.coll_part.name
+  location = var.location
+  tags = var.tags
+
+  ip_configuration {
+    name = "internal"
+    subnet_id = azurerm_subnet.vnet_hub_subnet_default.id
+    private_ip_address_allocation = "Dynamic"
+  }
+}
+
+resource "tls_private_key" "virtualappliance-private_key-01" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+resource "local_file" "linux_va_pem" { 
+  filename = "${path.module}/linuxvirtualappliance_pk.pem"
+  content = tls_private_key.virtualappliance-private_key-01.private_key_pem
+}
+
+resource "azurerm_linux_virtual_machine" "virtualappliance-vm-01" {
+  name                  = (format("%s-%s-%s-VM-INFRA-VIRTAPPL-001", var.coll_prefix, var.env_name, var.location_short))
+  location              = var.location
+  resource_group_name   = azurerm_resource_group.coll_part.name
+  network_interface_ids = [azurerm_network_interface.nic_virtual_appliance_001.id]
+  size                  = "Standard_B1s"
+
+  os_disk {
+    name                 = (format("%s-%s-%s-DISK-INFRA-VIRTAPPL-001", var.coll_prefix, var.env_name, var.location_short))
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+  }
+
+  source_image_reference {
+    publisher = "Canonical"
+    offer     = "0001-com-ubuntu-server-focal"
+    sku       = "20_04-lts-gen2"
+    version   = "latest"
+  }
+
+  computer_name                   = "VMVIRTAPP001"
+  admin_username                  = "linuxvaadmin"
+  disable_password_authentication = true
+
+  admin_ssh_key {
+    username   = "linuxvaadmin"
+    public_key = tls_private_key.virtualappliance-private_key-01.public_key_openssh
+  }
+}
