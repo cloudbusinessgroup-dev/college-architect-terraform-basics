@@ -283,7 +283,7 @@ resource "azurerm_linux_virtual_machine" "virtualappliance-vm-01" {
 }
 
 resource "azurerm_route_table" "route_table_virtual_appliance" {
-  name                          = (format("%s-%s-%s-RT-INFRA-VIRTAPPL-001", var.coll_prefix, var.env_name, var.location_short))
+  name                          = (format("%s-%s-%s-RT-VIRTAPPL-001", var.coll_prefix, var.env_name, var.location_short))
   location                      = var.location
   tags                          = var.tags
   resource_group_name           = azurerm_resource_group.rg_infra.name
