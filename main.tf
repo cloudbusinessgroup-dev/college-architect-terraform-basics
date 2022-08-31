@@ -137,7 +137,7 @@ resource "azurerm_windows_virtual_machine" "jumphost" {
 }
 
 resource "azurerm_resource_group" "rg_infra" {
-  name = (format("%s-%s-%s-INFRA-001", var.coll_prefix, var.env_name, var.location_short))
+  name = (format("%s-%s-%s-001", var.coll_prefix, var.env_name, var.location_short))
   location = var.location
   tags = var.tags
 }
@@ -161,7 +161,7 @@ resource "azurerm_subnet" "default_subnet_spoke_infra" {
   name = "Default"
   resource_group_name = azurerm_resource_group.rg_infra.name
   virtual_network_name = azurerm_virtual_network.vnet_spoke_infra.name
-  address_prefixes = ["10.1.1.0/24"]
+  address_prefixes = ["10.1.1.0/27"]
 }
 
 resource "azurerm_subnet_network_security_group_association" "nsg_to_default_subnet_spoke_infra" {
@@ -188,7 +188,7 @@ resource "azurerm_virtual_network_peering" "peering-hub-to-infra-spoke" {
 }
 
 resource "azurerm_network_interface" "nic_infra_dc_server" {
-  name = (format("%s-%s-%s-NIC-INFRA-DC-001", var.coll_prefix, var.env_name, var.location_short))
+  name = (format("%s-%s-%s-NIC-DC-001", var.coll_prefix, var.env_name, var.location_short))
   resource_group_name = azurerm_resource_group.rg_infra.name
   location = var.location
   tags = var.tags
@@ -252,7 +252,7 @@ resource "local_file" "linux_va_pem" {
 }
 
 resource "azurerm_linux_virtual_machine" "virtualappliance-vm-01" {
-  name                  = (format("%s-%s-%s-VM-INFRA-VIRTAPPL-001", var.coll_prefix, var.env_name, var.location_short))
+  name                  = (format("%s-%s-%s-VM-VIRTAPPL-001", var.coll_prefix, var.env_name, var.location_short))
   location              = var.location
   tags                  = var.tags
   resource_group_name   = azurerm_resource_group.coll_part.name
@@ -260,7 +260,7 @@ resource "azurerm_linux_virtual_machine" "virtualappliance-vm-01" {
   size                  = "Standard_B1s"
 
   os_disk {
-    name                 = (format("%s-%s-%s-DISK-INFRA-VIRTAPPL-001", var.coll_prefix, var.env_name, var.location_short))
+    name                 = (format("%s-%s-%s-DISK-VIRTAPPL-001", var.coll_prefix, var.env_name, var.location_short))
     caching              = "ReadWrite"
     storage_account_type = "Standard_LRS"
   }
@@ -308,4 +308,93 @@ resource "azurerm_route_table" "route_table_virtual_appliance" {
 resource "azurerm_subnet_route_table_association" "default_subnet_spoke_route_table" {
   subnet_id      = azurerm_subnet.default_subnet_spoke_infra.id
   route_table_id = azurerm_route_table.route_table_virtual_appliance.id
+}
+
+resource "azurerm_subnet" "backend_subnet_spoke_infra" {
+  name = "Backend"
+  resource_group_name = azurerm_resource_group.rg_infra.name
+  virtual_network_name = azurerm_virtual_network.vnet_spoke_infra.name
+  address_prefixes = ["10.1.1.32/27"]
+  enforce_private_link_endpoint_network_policies = true
+}
+
+resource "azurerm_subnet_network_security_group_association" "nsg_to_backend_subnet_spoke_infra" {
+  subnet_id = azurerm_subnet.backend_subnet_spoke_infra.id
+  network_security_group_id = azurerm_network_security_group.nsg_vnet_spoke_infra.id
+}
+
+resource "azurerm_private_dns_zone" "backend_private_dns" {
+  name = var.backend_private_dns
+  resource_group_name = azurerm_resource_group.rg_infra.name
+}
+
+resource "azurerm_private_dns_zone_virtual_network_link" "private-dns-link" {
+  name = format("%s-%s-%s-PRIVATE-DNS-ZONE-VNET-LINK-SPOKE-001", var.coll_prefix, var.env_name, var.location_short)
+  resource_group_name = azurerm_resource_group.rg_infra.name
+  private_dns_zone_name = azurerm_private_dns_zone.backend_private_dns.name
+  virtual_network_id = azurerm_virtual_network.vnet_spoke_infra.id
+}
+
+resource "azurerm_private_dns_zone" "endpoint-dns-private-zone" {
+  name = "${var.backend_dns_privatelink}.database.windows.net"
+  resource_group_name = azurerm_resource_group.rg_infra.name
+}
+
+resource "azurerm_mssql_server" "sql-server" {
+  name = "college-sql-server-instance" #NOTE: globally unique
+  resource_group_name = azurerm_resource_group.rg_infra.name
+  location = var.location
+  version = "12.0"
+  administrator_login = "collegesqladmin"
+  administrator_login_password = "SQLServerAdm1nP@ssw0rd"
+  public_network_access_enabled = false
+}
+
+resource "azurerm_sql_database" "sql-db" {
+  depends_on = [azurerm_mssql_server.sql-server]
+  name = "college-db"
+  resource_group_name = azurerm_resource_group.rg_infra.name
+  location = var.location
+  server_name = azurerm_mssql_server.sql-server.name
+  edition = "Standard"
+  collation = "Latin1_General_CI_AS"
+  max_size_bytes = "10737418240"
+  zone_redundant = false
+  read_scale = false
+}
+
+resource "azurerm_private_endpoint" "db-endpoint" {
+  depends_on = [azurerm_mssql_server.sql-server]
+  name = (format("%s-%s-%s-SQL-DB-ENDPOINT-001", var.coll_prefix, var.env_name, var.location_short))
+  location = var.location
+  resource_group_name = azurerm_resource_group.rg_infra.name
+  subnet_id = azurerm_subnet.backend_subnet_spoke_infra.id
+  private_service_connection {
+    name = "sql-db-endpoint"
+    is_manual_connection = "false"
+    private_connection_resource_id = azurerm_mssql_server.sql-server.id
+    subresource_names = ["sqlServer"]
+  }
+}
+
+data "azurerm_private_endpoint_connection" "endpoint-connection" {
+  depends_on = [azurerm_private_endpoint.db-endpoint]
+  name = azurerm_private_endpoint.db-endpoint.name
+  resource_group_name = azurerm_resource_group.rg_infra.name
+}
+
+resource "azurerm_private_dns_a_record" "endpoint-dns-a-record" {
+  depends_on = [azurerm_mssql_server.sql-server]
+  name = lower(azurerm_mssql_server.sql-server.name)
+  zone_name = azurerm_private_dns_zone.endpoint-dns-private-zone.name
+  resource_group_name = azurerm_resource_group.rg_infra.name
+  ttl = 300
+  records = [data.azurerm_private_endpoint_connection.endpoint-connection.private_service_connection.0.private_ip_address]
+}
+
+resource "azurerm_private_dns_zone_virtual_network_link" "dns-zone-to-vnet-link" {
+  name = "sql-db-vnet-link"
+  resource_group_name = azurerm_resource_group.rg_infra.name
+  private_dns_zone_name = azurerm_private_dns_zone.endpoint-dns-private-zone.name
+  virtual_network_id = azurerm_virtual_network.vnet_spoke_infra.id
 }

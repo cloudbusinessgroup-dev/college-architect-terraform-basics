@@ -59,3 +59,14 @@ variable "coll_prefix" {
   default     = "COLLEGE-INFRA"
 }
 
+variable "backend_private_dns" {
+  type        = string
+  description = "Private DNS"
+  default     = "cloudbusinessgroup.azure"
+}
+
+variable "backend_dns_privatelink" {
+  type        = string
+  description = "SQL DNS Private Link"
+  default     = "cloudbusinessgroup"
+}
