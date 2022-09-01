@@ -21,3 +21,15 @@ variable object_id {
 variable name {
   type    = string
 }
+
+variable coll_prefix {
+  type    = string
+}
+
+variable env_name {
+  type    = string
+}
+
+variable location_short {
+  type    = string
+}

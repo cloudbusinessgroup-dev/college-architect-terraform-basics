@@ -44,6 +44,9 @@ module "keyvault" {
   tenant_id              = var.tenant_id
   tags                   = var.tags
   object_id              = var.object_id
+  coll_prefix            = var.coll_prefix
+  env_name               = var.env_name
+  location_short         = var.location_short
 }
 
 resource "random_password" "sql-server-admin-password" {
@@ -65,35 +68,38 @@ resource "random_password" "infra-server-password" {
 }
 
 data "azurerm_key_vault_secret" "sql-server-admin-password-secret-data" {
+  count        = var.initial_deployment_keyvault ? 0 : 1
   name         = lower((format("%s-%s-%s-SQL-Server-Instance-Password", var.coll_prefix, var.env_name, var.location_short)))
   key_vault_id = module.keyvault.kv_id
 }
 
 data "azurerm_key_vault_secret" "hub-server-password-secret-data" {
+  count        = var.initial_deployment_keyvault ? 0 : 1
   name         = lower((format("%s-%s-%s-Hub-Server-Password", var.coll_prefix, var.env_name, var.location_short)))
   key_vault_id = module.keyvault.kv_id
 }
 
 data "azurerm_key_vault_secret" "infra-server-password-secret-data" {
+  count        = var.initial_deployment_keyvault ? 0 : 1
   name         = lower((format("%s-%s-%s-Infra-Server-Password", var.coll_prefix, var.env_name, var.location_short)))
   key_vault_id = module.keyvault.kv_id
 }
 
 resource "azurerm_key_vault_secret" "sql-server-admin-password-secret" {
   name         = lower((format("%s-%s-%s-SQL-Server-Instance-Password", var.coll_prefix, var.env_name, var.location_short)))
-  value        = (data.azurerm_key_vault_secret.sql-server-admin-password-secret-data.value != "" ? data.azurerm_key_vault_secret.sql-server-admin-password-secret-data.value : random_password.sql-server-admin-password.result)
+  value        = (data.azurerm_key_vault_secret.sql-server-admin-password-secret-data != [] ? data.azurerm_key_vault_secret.sql-server-admin-password-secret-data[0].value : random_password.sql-server-admin-password.result)
   key_vault_id = module.keyvault.kv_id
 }
 
 resource "azurerm_key_vault_secret" "hub-server-password-secret" {
   name         = lower((format("%s-%s-%s-Hub-Server-Password", var.coll_prefix, var.env_name, var.location_short)))
-  value        = (data.azurerm_key_vault_secret.hub-server-password-secret-data.value != "" ? data.azurerm_key_vault_secret.hub-server-password-secret-data.value : random_password.hub-server-password.result)
+  value        = (data.azurerm_key_vault_secret.hub-server-password-secret-data != [] ? data.azurerm_key_vault_secret.hub-server-password-secret-data[0].value : random_password.hub-server-password.result)
   key_vault_id = module.keyvault.kv_id
 }
 
 resource "azurerm_key_vault_secret" "infra-server-password-secret" {
   name         = lower((format("%s-%s-%s-Infra-Server-Password", var.coll_prefix, var.env_name, var.location_short)))
-  value        = (data.azurerm_key_vault_secret.infra-server-password-secret-data.value != "" ? data.azurerm_key_vault_secret.infra-server-password-secret-data.value : random_password.infra-server-password.result)
+  value        = (data.azurerm_key_vault_secret.infra-server-password-secret-data != [] ? data.azurerm_key_vault_secret.infra-server-password-secret-data[0].value : random_password.infra-server-password.result)
   key_vault_id = module.keyvault.kv_id
 }
 

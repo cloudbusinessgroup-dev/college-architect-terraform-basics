@@ -77,3 +77,9 @@ variable "backend_dns_privatelink" {
   description = "SQL DNS Private Link"
   default     = "cloudbusinessgroup"
 }
+
+variable "initial_deployment_keyvault" {
+  type        = bool
+  description = "Define if new initial passwords for servers should be created"
+  default     = false
+}
