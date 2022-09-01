@@ -46,7 +46,7 @@ module "keyvault" {
   object_id              = var.object_id
 }
 
-resource "random_password" "sql-server-password" {
+resource "random_password" "sql-server-admin-password" {
   length           = 16
   special          = true
   override_special = "!#$%&*()-_=+[]{}<>:?"
@@ -64,21 +64,36 @@ resource "random_password" "infra-server-password" {
   override_special = "!#$%&*()-_=+[]{}<>:?"
 }
 
+data "azurerm_key_vault_secret" "sql-server-admin-password-secret-data" {
+  name         = lower((format("%s-%s-%s-SQL-Server-Instance-Password", var.coll_prefix, var.env_name, var.location_short)))
+  key_vault_id = module.keyvault.kv_id
+}
+
+data "azurerm_key_vault_secret" "hub-server-password-secret-data" {
+  name         = lower((format("%s-%s-%s-Hub-Server-Password", var.coll_prefix, var.env_name, var.location_short)))
+  key_vault_id = module.keyvault.kv_id
+}
+
+data "azurerm_key_vault_secret" "infra-server-password-secret-data" {
+  name         = lower((format("%s-%s-%s-Infra-Server-Password", var.coll_prefix, var.env_name, var.location_short)))
+  key_vault_id = module.keyvault.kv_id
+}
+
 resource "azurerm_key_vault_secret" "sql-server-admin-password-secret" {
   name         = lower((format("%s-%s-%s-SQL-Server-Instance-Password", var.coll_prefix, var.env_name, var.location_short)))
-  value        = random_password.sql-server-password
+  value        = (data.azurerm_key_vault_secret.sql-server-admin-password-secret-data.value != "" ? data.azurerm_key_vault_secret.sql-server-admin-password-secret-data.value : random_password.sql-server-admin-password.result)
   key_vault_id = module.keyvault.kv_id
 }
 
 resource "azurerm_key_vault_secret" "hub-server-password-secret" {
   name         = lower((format("%s-%s-%s-Hub-Server-Password", var.coll_prefix, var.env_name, var.location_short)))
-  value        = random_password.hub-server-password
+  value        = (data.azurerm_key_vault_secret.hub-server-password-secret-data.value != "" ? data.azurerm_key_vault_secret.hub-server-password-secret-data.value : random_password.hub-server-password.result)
   key_vault_id = module.keyvault.kv_id
 }
 
 resource "azurerm_key_vault_secret" "infra-server-password-secret" {
   name         = lower((format("%s-%s-%s-Infra-Server-Password", var.coll_prefix, var.env_name, var.location_short)))
-  value        = random_password.infra-server-password
+  value        = (data.azurerm_key_vault_secret.infra-server-password-secret-data.value != "" ? data.azurerm_key_vault_secret.infra-server-password-secret-data.value : random_password.infra-server-password.result)
   key_vault_id = module.keyvault.kv_id
 }
 
@@ -160,7 +175,7 @@ resource "azurerm_windows_virtual_machine" "jumphost" {
   tags = var.tags
   size = "Standard_B1s"
   admin_username = "adminjh"
-  admin_password = azurerm_key_vault_secret.hub-server-password-secret
+  admin_password = azurerm_key_vault_secret.hub-server-password-secret.value
   network_interface_ids = [
     azurerm_network_interface.nic_bastion_host.id
   ]
@@ -250,7 +265,7 @@ resource "azurerm_windows_virtual_machine" "infra_dc_server" {
   tags = var.tags
   size = "Standard_DS1_v2"
   admin_username = "admindc"
-  admin_password = azurerm_key_vault_secret.infra-server-password-secret
+  admin_password = azurerm_key_vault_secret.infra-server-password-secret.value
   network_interface_ids = [
     azurerm_network_interface.nic_infra_dc_server.id
   ]
@@ -388,7 +403,7 @@ resource "azurerm_mssql_server" "sql-server" {
   location = var.location
   version = "12.0"
   administrator_login = "collegesqladmin"
-  administrator_login_password = azurerm_key_vault_secret.sql-server-admin-password-secret
+  administrator_login_password = azurerm_key_vault_secret.sql-server-admin-password-secret.value
   public_network_access_enabled = false
 }
 

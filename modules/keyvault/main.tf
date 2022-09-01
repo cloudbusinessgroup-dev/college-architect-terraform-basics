@@ -34,7 +34,8 @@ resource "azurerm_key_vault" "keyvault" {
         "Delete",
         "Recover",
         "Backup",
-        "Restore"
+        "Restore",
+        "Purge"
       ]
 
       certificate_permissions = [
