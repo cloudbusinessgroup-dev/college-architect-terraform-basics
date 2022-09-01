@@ -29,8 +29,6 @@ resource "azurerm_resource_group" "coll_part" {
   tags     = var.tags
 }
 
-
-
 module "keyvault" {
 
   depends_on = [
