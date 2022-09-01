@@ -36,12 +36,6 @@ resource "azurerm_network_security_group" "nsg_vnet_hub" {
   tags = var.tags
 }
 
-resource "azurerm_network_ddos_protection_plan" "prot_plan_hub" {
- name = (format("%s-%s-%s-DDOSPP-HUB-001", var.coll_prefix, var.env_name, var.location_short))
- resource_group_name = azurerm_resource_group.coll_part.name
- location = var.location
- tags = var.tags
-}
 
 resource "azurerm_virtual_network" "vnet_hub" {
  name =  (format("%s-%s-%s-VNET-HUB-001", var.coll_prefix, var.env_name, var.location_short))
@@ -49,11 +43,6 @@ resource "azurerm_virtual_network" "vnet_hub" {
  address_space = ["10.1.0.0/24"]
  location = var.location
  tags = var.tags
-
- ddos_protection_plan {
-   id = azurerm_network_ddos_protection_plan.prot_plan_hub.id
-   enable = true
- }
 }
 
 resource "azurerm_subnet" "vnet_hub_subnet_default" {
@@ -397,4 +386,31 @@ resource "azurerm_private_dns_zone_virtual_network_link" "dns-zone-to-vnet-link"
   resource_group_name = azurerm_resource_group.rg_infra.name
   private_dns_zone_name = azurerm_private_dns_zone.endpoint-dns-private-zone.name
   virtual_network_id = azurerm_virtual_network.vnet_spoke_infra.id
+}
+
+module "keyvault" {
+
+  depends_on = [
+    azurerm_resource_group.rg_infra
+  ]
+
+  name                   = lower((format("%s-%s-%s-KV", var.coll_prefix, var.env_name, var.location_short)))
+  source                 = "./modules/keyvault"
+  resource_group_name    = azurerm_resource_group.rg_infra.name
+  location               = var.location
+  tenant_id              = var.tenant_id
+  tags                   = var.tags
+  object_id              = var.object_id
+}
+
+resource "random_password" "password" {
+  length           = 16
+  special          = true
+  override_special = "!#$%&*()-_=+[]{}<>:?"
+}
+
+resource "azurerm_key_vault_secret" "sql-server-admin-password" {
+  name         = lower((format("%s-%s-%s-SQL", var.coll_prefix, var.env_name, var.location_short)))
+  value        = random_password.password.result
+  key_vault_id = module.keyvault.kv_id
 }

@@ -22,6 +22,13 @@ variable "client_id" {
   default = "e7e20ab3-47ba-4cb2-94fa-f9143304627a"
 }
 
+variable "object_id" {
+  type        = string
+  description = "The College App Registration object id"
+  default     = "18ecd97e-0499-477f-8129-85030620b747" 
+}
+
+
 variable "client_secret" {
   type        = string
   description = "The College App Registration client secret we have created before"
