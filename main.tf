@@ -117,6 +117,21 @@ resource "azurerm_virtual_network" "vnet_hub" {
  tags = var.tags
 }
 
+module "vpngateway" {
+  depends_on = [
+    azurerm_resource_group.coll_part
+  ]
+
+  source                 = "./modules/vpngateway"
+  resource_group_name    = azurerm_resource_group.coll_part.name
+  location               = var.location
+  tags                   = var.tags
+  coll_prefix            = var.coll_prefix
+  env_name               = var.env_name
+  location_short         = var.location_short
+  address_prefix         = azurerm_virtual_network.vnet_hub.address_space[0]
+}
+
 resource "azurerm_subnet" "vnet_hub_subnet_default" {
   name = "Default"
   resource_group_name = azurerm_resource_group.coll_part.name
@@ -286,8 +301,6 @@ resource "azurerm_windows_virtual_machine" "infra_dc_server" {
     version = "latest"
   }
 }
-
-
 
 resource "azurerm_network_interface" "nic_virtual_appliance_001" {
   name = (format("%s-%s-%s-NIC-VA-001", var.coll_prefix, var.env_name, var.location_short))

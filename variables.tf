@@ -81,5 +81,5 @@ variable "backend_dns_privatelink" {
 variable "initial_deployment_keyvault" {
   type        = bool
   description = "Define if new initial passwords for servers should be created"
-  default     = false
+  default     = true
 }
